@@ -8,9 +8,15 @@ repository = "https://github.com/gonzaponte/h5rio"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["macros"]
+
 [dependencies]
 hdf5_metno = { package = "hdf5-metno", version = "0.12.3" , features=["blosc-zlib"]}
 ndarray = "0.17.2"
+
+h5rio_macros = { path = "macros", version = "0.0.0" }
+
 
 [dev-dependencies]
 float_eq = "1.0.1"

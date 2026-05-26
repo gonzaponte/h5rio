@@ -173,11 +173,21 @@ name = "h5rio"
 version = "0.0.0"
 dependencies = [
  "float_eq",
+ "h5rio_macros",
  "hdf5-metno",
  "ndarray",
  "pretty_assertions",
  "rstest",
  "tempfile",
+]
+
+[[package]]
+name = "h5rio_macros"
+version = "0.0.0"
+dependencies = [
+ "hdf5-metno",
+ "proc-macro2",
+ "quote",
 ]
 
 [[package]]
