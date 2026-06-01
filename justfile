@@ -18,3 +18,9 @@ clean:
 examples:
     cargo run --example array_round_trip
     cargo run --example table_round_trip
+
+test-client:
+    #!/usr/bin/env bash
+    cp -r examples/client /tmp/
+    cd /tmp/client
+    cargo run
