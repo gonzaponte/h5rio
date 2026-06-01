@@ -28,3 +28,6 @@ jobs:
 
       - name: Run tests
         run: nix develop --command just test
+
+      - name: Run examples
+        run: nix develop --command just examples
