@@ -1,0 +1,31 @@
+name: Test usage by client
+
+on:
+  push:
+    # branches:
+    #   - main
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  doit:
+    name: Client check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: DeterminateSystems/determinate-nix-action@v3
+
+      - name: Build
+        run: nix develop --command echo "Compilation finished"
+
+      - name: Test client
+        run: nix develop --command just test-client
