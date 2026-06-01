@@ -14,3 +14,7 @@ verbose regexp:
 
 clean:
     cargo clean
+
+examples:
+    cargo run --example array_round_trip
+    cargo run --example table_round_trip
