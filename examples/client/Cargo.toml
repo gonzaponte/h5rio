@@ -1,0 +1,9 @@
+[package]
+name = "AClientProject"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+h5rio = { git = "https://github.com/gonzaponte/h5rio.git" }
+hdf5_metno = { package = "hdf5-metno", version = "0.12.3", features = ["blosc-zlib"] }
+ndarray = "0.17.2"
