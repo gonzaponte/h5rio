@@ -1,7 +1,10 @@
 [package]
 name = "h5rio_macros"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
+description = "Useful macros for the h5rio crate"
+license = "GPL-3.0"
+repository= "https://github.com/gonzaponte/h5rio"
 
 [lib]
 proc-macro = true

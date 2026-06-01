@@ -1,10 +1,12 @@
 [package]
 name = "h5rio"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
 description = "A simple HDF5 IO library"
-license = "GPL v3"
-repository = "https://github.com/gonzaponte/h5rio"
+license = "GPL-3.0"
+repository= "https://github.com/gonzaponte/h5rio"
+readme = "README.md"
+keywords = ["hdf5", "simple", "io"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,7 +17,7 @@ members = ["macros"]
 hdf5_metno = { package = "hdf5-metno", version = "0.12.3" , features=["blosc-zlib"]}
 ndarray = "0.17.2"
 
-h5rio_macros = { path = "macros", version = "0.0.0" }
+h5rio_macros = { path = "macros", version = "0.1.0" }
 
 
 [dev-dependencies]
