@@ -44,7 +44,7 @@
               })
             ];
           };
-        in
+        in rec
           {
             devShell = pkgs.mkShell {
               name = "my-rust-project";
@@ -58,6 +58,7 @@
                 hdf5-cpp.dev
               ];
 
+
               # Shell configuration
               shellHook = ''
               '';
@@ -68,6 +69,9 @@
               # Provide HDF5 dir
               HDF5_DIR = pkgs.symlinkJoin { name = "hdf5"; paths = [ pkgs.hdf5 pkgs.hdf5.dev ]; };
             };
+
+            devShells.default = devShell;
+
           }
       );
 }
