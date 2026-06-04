@@ -3,10 +3,10 @@ use hdf5_metno as hdf5;
 use ndarray::{s, ArrayD};
 
 
-pub fn read_table<T: hdf5::H5Type + Clone>(filename: &str, dataset : &str) -> hdf5::Result<Vec<T>> {
+pub fn read_table<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<Vec<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
-    dataset.read_slice_1d::<T,_>(s![..]).map(|v| v.to_vec())
+    dataset.read_slice_1d::<T,_>(s![..]).map(|v| v.into_raw_vec_and_offset().0)
 }
 
 pub fn read_array<T: hdf5::H5Type + Clone>(filename: &str, dataset : &str) -> hdf5::Result<ArrayD<T>> {
