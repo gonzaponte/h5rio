@@ -114,14 +114,36 @@ impl<T: hdf5::H5Type> Drop for ArrayHdf5Writer<T> {
 }
 
 
+pub fn write_chunked_array<T, D>( file        : Rc<hdf5::File>
+                                , dataset     : &str
+                                , chunk_shape : Vec<usize>
+                                , array       : &Array<T, D>) -> hdf5::Result<()>
+where T: hdf5::H5Type,
+      D: Dimension,
+{
+    if chunk_shape.iter().filter(|c| **c != 0).count() == 0 {
+        return Err(Error::Internal(format!("write_chunked_array(): invalid chunk shape {chunk_shape:?}")));
+    }
+
+    let ds_shape = array.shape().iter().map(|s| Extent::fixed(*s)).collect::<Vec<_>>();
+    let dataset = file.new_dataset::<T>()
+                      .chunk(chunk_shape.as_slice())
+                      .shape(   ds_shape.as_slice())
+                      .blosc_zlib(4, BloscShuffle::Byte)
+                      .create(dataset)?;
+
+    dataset.write(array.view())
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use hdf5_metno as hdf5;
-    use ndarray::arr2;
+    use ndarray::array;
     use pretty_assertions::assert_eq;
-
+    use rstest::rstest;
     use crate::read_array;
     use crate::utils::tempfile;
 
@@ -155,7 +177,8 @@ mod tests {
         let file             = hdf5::File::create(filename.clone()).unwrap();
         let writer           = ArrayHdf5Writer::<i32>::new(Rc::new(file), "/here", 1, vec![2,3]).unwrap();
 
-        let data = arr2(&[[-1, 2, -3], [4, -5, 6]]);
+        let data = array![ [-1,  2, -3]
+                         , [ 4, -5,  6] ];
         writer.write(data.clone()).unwrap();
 
         let read = read_array::<i32>(&filename, "/here").unwrap();
@@ -176,8 +199,8 @@ mod tests {
         let file             = hdf5::File::create(filename.clone()).unwrap();
         let writer           = ArrayHdf5Writer::<i32>::new(Rc::new(file), "/here", 1, vec![2,3]).unwrap();
 
-        let data0 = arr2(&[[- 1,  2, - 3], [ 4, - 5,  6]]);
-        let data1 = arr2(&[[-11, 22, -33], [44, -55, 66]]);
+        let data0 = array![ [- 1,  2, - 3], [ 4, - 5,  6] ];
+        let data1 = array![ [-11, 22, -33], [44, -55, 66] ];
         writer.write(data0.clone()).unwrap();
         writer.write(data1.clone()).unwrap();
 
@@ -206,7 +229,7 @@ mod tests {
         let file             = hdf5::File::create(filename.clone()).unwrap();
         let writer           = ArrayHdf5Writer::<i64>::new(Rc::new(file), "/here", 5, vec![2,3]).unwrap();
 
-        let data = arr2(&[[-1, 2, -3], [4, -5, 6]]);
+        let data = array![ [-1, 2, -3], [4, -5, 6] ];
         writer.write(data.clone()).unwrap(); // not actually written because of cache
 
         let read = read_array::<i64>(&filename, "/here").unwrap();
@@ -215,6 +238,49 @@ mod tests {
         drop(writer);
         let read = read_array::<i64>(&filename, "/here").unwrap();
         assert_eq!(read.shape(), &[1, 2, 3]);
+
+    }
+
+    #[rstest]
+    #[case(vec![1])]       // invalid shape
+    #[case(vec![1, 1])]    //
+    #[case(vec![0, 1, 1])] // can't have zeros
+    #[case(vec![1, 0, 1])] //
+    #[case(vec![1, 1, 0])] //
+    fn write_carray_invalid_chunk_shape(#[case] chunk_shape: Vec<usize>) {
+        let array = array![ [ [0, 1] ,
+                              [2, 3] ],
+
+                            [ [4, 5] ,
+                              [6, 7] ],
+                          ]; // shape (2, 2, 2)
+        let (_dir, filename) = tempfile("flush_on_drop");
+        let file             = hdf5::File::create(filename.clone()).unwrap();
+        let out              = write_chunked_array(Rc::new(file), "/here", chunk_shape, &array);
+        assert!(out.is_err())
+    }
+
+    #[test]
+    fn write_carray_invalid_dataset_name() {
+        let array            = array![ 1, 2, 3 ];
+        let (_dir, filename) = tempfile("write_carray_invalid_dataset_name");
+        let file             = hdf5::File::create(filename).unwrap();
+        let out              = write_chunked_array(Rc::new(file), "", vec![1], &array);
+        assert!(out.is_err());
+    }
+
+    #[rstest]
+    #[case(vec![1, 2, 3         ], vec![3])]
+    #[case(vec![1, 2, 3, 4, 5, 6], vec![2, 3])]
+    fn write_carray_round_trip(#[case] array: Vec<u32>, #[case] chunk_shape: Vec<usize>)
+    {
+        let array            = Array::from_shape_vec(chunk_shape.clone(), array).unwrap();
+        let (_dir, filename) = tempfile("write_carray_round_trip");
+        let file             = hdf5::File::create(&filename).unwrap();
+        write_chunked_array(Rc::new(file), "/here", chunk_shape.clone(), &array).unwrap();
+
+        let read = read_array::<u32>(&filename, "/here").unwrap();
+        assert_eq!(read.shape(), chunk_shape);
 
     }
 
