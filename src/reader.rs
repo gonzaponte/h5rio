@@ -1,6 +1,8 @@
+use std::marker::PhantomData;
+
 use hdf5_metno as hdf5;
 
-use ndarray::{s, ArrayD};
+use ndarray::{s, ArrayD, IxDyn};
 
 
 pub fn read_table<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<Vec<T>> {
@@ -9,7 +11,7 @@ pub fn read_table<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Resu
     dataset.read_slice_1d::<T,_>(s![..]).map(|v| v.into_raw_vec_and_offset().0)
 }
 
-pub fn read_array<T: hdf5::H5Type + Clone>(filename: &str, dataset : &str) -> hdf5::Result<ArrayD<T>> {
+pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<ArrayD<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
     dataset.read_dyn::<T>()
@@ -17,6 +19,40 @@ pub fn read_array<T: hdf5::H5Type + Clone>(filename: &str, dataset : &str) -> hd
                            .expect("Could not reshape read array") )
 }
 
+pub struct Hdf5ArrayIter<T> {
+    _file: hdf5::File, // keep file alive
+    dataset: hdf5::Dataset,
+    index: usize,
+    len: usize,
+    ndim: usize,
+    _inner_type: PhantomData<T>,
+}
+
+pub fn iter_array<T: hdf5::H5Type>(filename: &str, dataset: &str) -> hdf5::Result<Hdf5ArrayIter<T>> {
+    let file    = hdf5::File::open(filename)?;
+    let dataset = file.dataset(dataset)?;
+    let shape   = dataset.shape();
+    Ok(Hdf5ArrayIter{_file: file, dataset, index:0, len: shape[0], ndim: shape.len(), _inner_type: PhantomData})
+}
+
+
+impl<T> Iterator for Hdf5ArrayIter<T> where T: hdf5::H5Type {
+    type Item = hdf5::Result<ArrayD<T>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.len { return None; }
+
+        let mut slice = Vec::with_capacity(self.ndim);
+        slice.push(hdf5::SliceOrIndex::Index(self.index));
+        for _ in 1..self.ndim {
+            slice.push(hdf5::SliceOrIndex::Unlimited{start:0, step:1, block:1})
+        }
+        let slice = hdf5::Hyperslab::from(slice);
+        let entry = self.dataset.read_slice::<T, _, IxDyn>(slice);
+        self.index += 1;
+        return Some(entry);
+    }
+}
 
 #[cfg(test)]
 mod tests {

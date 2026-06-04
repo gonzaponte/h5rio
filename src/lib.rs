@@ -2,6 +2,8 @@
 mod reader;
 pub use reader::read_table;
 pub use reader::read_array;
+pub use reader::iter_array;
+pub use reader::Hdf5ArrayIter;
 
 mod array_writer;
 mod table_writer;
