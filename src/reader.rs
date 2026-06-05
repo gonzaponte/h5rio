@@ -124,4 +124,29 @@ mod tests {
         assert_float_eq!(read[[1,1,1]], 55.0, ulps<=2);
         assert_float_eq!(read[[1,1,2]], 66.0, ulps<=2);
     }
+
+    #[test]
+    fn iter_array_custom() {
+        let mut iter = iter_array::<f64>("data/table_and_array.h5", "/group/array").unwrap();
+
+        let first = iter.next().unwrap().unwrap();
+        assert_eq!(first.shape(), &[2, 3]);
+        assert_float_eq!(first[[0,0]], 1.0, ulps<=2);
+        assert_float_eq!(first[[0,1]], 2.0, ulps<=2);
+        assert_float_eq!(first[[0,2]], 3.0, ulps<=2);
+        assert_float_eq!(first[[1,0]], 4.0, ulps<=2);
+        assert_float_eq!(first[[1,1]], 5.0, ulps<=2);
+        assert_float_eq!(first[[1,2]], 6.0, ulps<=2);
+
+        let second = iter.next().unwrap().unwrap();
+        assert_eq!(second.shape(), &[2, 3]);
+        assert_float_eq!(second[[0,0]], 11.0, ulps<=2);
+        assert_float_eq!(second[[0,1]], 22.0, ulps<=2);
+        assert_float_eq!(second[[0,2]], 33.0, ulps<=2);
+        assert_float_eq!(second[[1,0]], 44.0, ulps<=2);
+        assert_float_eq!(second[[1,1]], 55.0, ulps<=2);
+        assert_float_eq!(second[[1,2]], 66.0, ulps<=2);
+
+        assert!(iter.next().is_none());
+    }
 }
