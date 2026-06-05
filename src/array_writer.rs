@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::io::Result;
+use std::io::{Error as IoError, ErrorKind, Result};
 use std::rc::Rc;
 
 use hdf5_metno::{self as hdf5, Error, Extent};
@@ -91,6 +91,17 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
     }
 
     pub fn write<D: Dimension>(&self, item: Array<T,D>) -> Result<()> {
+        if item.shape() != self.shape.as_slice() {
+            return Err(IoError::new(
+                ErrorKind::InvalidInput,
+                format!(
+                    "ArrayHdf5Writer::write: invalid array shape {:?}, expected {:?}",
+                    item.shape(),
+                    self.shape
+                ),
+            ));
+        }
+
         self.cache.borrow_mut().extend(item.into_iter());
 
         if self.cache.borrow().len() == self.chunk_size {
@@ -239,6 +250,31 @@ mod tests {
         let read = read_array::<i64>(&filename, "/here").unwrap();
         assert_eq!(read.shape(), &[1, 2, 3]);
 
+    }
+
+    #[test]
+    fn write_invalid_shape() {
+        let (_dir, filename) = tempfile("write_invalid_shape");
+        let file             = hdf5::File::create(filename.clone()).unwrap();
+        let writer           = ArrayHdf5Writer::<i32>::new(Rc::new(file), "/here", 1, vec![2,3]).unwrap();
+
+        let invalid = array![ [1, 2], [3, 4] ];
+        let out     = writer.write(invalid);
+
+        assert!(out.is_err());
+
+        let valid = array![ [10, 20, 30], [40, 50, 60] ];
+        writer.write(valid.clone()).unwrap();
+
+        let read = read_array::<i32>(&filename, "/here").unwrap();
+
+        assert_eq!(read.shape(), &[1, 2, 3]);
+        assert_eq!(read[[0,0,0]], valid[[0,0]]);
+        assert_eq!(read[[0,0,1]], valid[[0,1]]);
+        assert_eq!(read[[0,0,2]], valid[[0,2]]);
+        assert_eq!(read[[0,1,0]], valid[[1,0]]);
+        assert_eq!(read[[0,1,1]], valid[[1,1]]);
+        assert_eq!(read[[0,1,2]], valid[[1,2]]);
     }
 
     #[rstest]
