@@ -120,7 +120,19 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
 
 impl<T: hdf5::H5Type> Drop for ArrayHdf5Writer<T> {
     fn drop(&mut self) {
-        self.flush().unwrap()
+        if self.cache.borrow().is_empty() { return; }
+
+        let item_size = self.shape.iter().product::<usize>();
+        let n_entries = self.cache.borrow().len() / item_size;
+
+        eprintln!("ArrayHdf5Writer: dropping writer with {n_entries} buffered\
+                   entries; flushing now. To avoid this warning flush the\
+                   writer explicitly.");
+
+        if let Err(error) = self.flush() {
+            eprintln!("ArrayHdf5Writer: failed to flush buffered entries on\
+                       drop: {error}");
+        }
     }
 }
 
@@ -250,6 +262,24 @@ mod tests {
         let read = read_array::<i64>(&filename, "/here").unwrap();
         assert_eq!(read.shape(), &[1, 2, 3]);
 
+    }
+
+    #[test]
+    fn drop_does_not_panic_when_flush_fails() {
+        let (_dir, filename) = tempfile("drop_does_not_panic_when_flush_fails");
+        let file             = hdf5::File::create(filename).unwrap();
+        let mut writer       = ArrayHdf5Writer::<i64>::new(Rc::new(file), "/here", 5, vec![2,3]).unwrap();
+
+        writer.write(array![ [-1, 2, -3], [4, -5, 6] ]).unwrap();
+
+        // intentionally corrupt the writer to induce a failure on write
+        writer.shape = vec![3, 2];
+
+        let out = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            drop(writer);
+        }));
+
+        assert!(out.is_ok());
     }
 
     #[test]
