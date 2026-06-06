@@ -15,8 +15,16 @@ pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Resu
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
     dataset.read_dyn::<T>()
-           .map(|data| data.into_shape_with_order(dataset.shape())
-                           .expect("Could not reshape read array") )
+        .and_then(|data| {
+            let read_shape = data.shape().to_vec();
+            data.into_shape_with_order(dataset.shape())
+                .map_err(|error| {
+                    let msg = format!("could not reshape array of shape {:?}\
+                                       into {:?}.\n{}",
+                                      read_shape, dataset.shape(), error);
+                    hdf5::Error::Internal(msg)
+                })
+           })
 }
 
 pub struct Hdf5ArrayIter<T> {
