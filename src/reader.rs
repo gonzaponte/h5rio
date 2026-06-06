@@ -40,6 +40,12 @@ pub fn iter_array<T: hdf5::H5Type>(filename: &str, dataset: &str) -> hdf5::Resul
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
     let shape   = dataset.shape();
+
+    if shape.is_empty() {
+        let msg = "iter_array: cannot iterate over a scalar dataset".to_owned();
+        return Err(hdf5::Error::Internal(msg));
+    }
+
     Ok(Hdf5ArrayIter{_file: file, dataset, index:0, len: shape[0], ndim: shape.len(), _inner_type: PhantomData})
 }
 
@@ -156,5 +162,21 @@ mod tests {
         assert_float_eq!(second[[1,2]], 66.0, ulps<=2);
 
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn iter_array_rejects_scalar_dataset() {
+        let (_dir, filename) = crate::utils::tempfile("iter_array_rejects_scalar_dataset");
+        let file             = hdf5::File::create(&filename).unwrap();
+        file.new_dataset::<i32>()
+            .shape(())
+            .create("/scalar")
+            .unwrap()
+            .write_scalar(&42)
+            .unwrap();
+
+        let out = iter_array::<i32>(&filename, "/scalar");
+
+        assert!(matches!(out, Err(hdf5::Error::Internal(_))));
     }
 }
