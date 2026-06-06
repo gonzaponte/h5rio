@@ -143,8 +143,9 @@ pub fn write_chunked_array<T, D>( file        : Rc<hdf5::File>
 where T: hdf5::H5Type,
       D: Dimension,
 {
-    if chunk_shape.iter().filter(|c| **c != 0).count() == 0 {
-        let msg = format!("write_chunked_array(): invalid chunk shape {chunk_shape:?}");
+    if chunk_shape.len() != array.ndim() || chunk_shape.iter().any(|c| *c == 0) {
+        let msg = format!("write_chunked_array(): invalid chunk shape {:?} for\
+                           array shape {:?}", chunk_shape, array.shape());
         return Err(hdf5::Error::Internal(msg));
     }
 
