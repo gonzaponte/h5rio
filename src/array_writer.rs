@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use hdf5_metno::{self as hdf5, Error, Extent};
+use hdf5_metno as hdf5;
 use hdf5_metno::filters::BloscShuffle;
 
 use ndarray::{Array, ArrayViewD, Dimension, IxDyn};
@@ -23,7 +23,8 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
               , shape      : Vec<usize>
               ) -> hdf5::Result<Self> {
         if chunk_size == 0 {
-            return Err(Error::Internal("Hdf5Writer::new: invalid chunk size 0".to_owned()));
+            let msg = "Hdf5Writer::new: invalid chunk size 0".to_owned();
+            return Err(hdf5::Error::Internal(msg));
         }
 
         let chunk_total = chunk_size * shape.iter().product::<usize>();
@@ -31,9 +32,9 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         let mut chunk_shape = vec![chunk_size];
         chunk_shape.extend_from_slice(&shape);
 
-        let mut ds_shape = vec![Extent::resizable(0)];
+        let mut ds_shape = vec![hdf5::Extent::resizable(0)];
         for s in shape.iter() {
-            ds_shape.push(Extent::fixed(*s))
+            ds_shape.push(hdf5::Extent::fixed(*s))
         }
 
         let dataset = file.new_dataset::<T>()
@@ -91,7 +92,7 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
 
     pub fn write<D: Dimension>(&self, item: Array<T,D>) -> hdf5::Result<()> {
         if item.shape() != self.shape.as_slice() {
-            return Err(Error::Internal(
+            return Err(hdf5::Error::Internal(
                 format!(
                     "ArrayHdf5Writer::write: invalid array shape {:?}, expected {:?}",
                     item.shape(),
@@ -143,10 +144,14 @@ where T: hdf5::H5Type,
       D: Dimension,
 {
     if chunk_shape.iter().filter(|c| **c != 0).count() == 0 {
-        return Err(Error::Internal(format!("write_chunked_array(): invalid chunk shape {chunk_shape:?}")));
+        let msg = format!("write_chunked_array(): invalid chunk shape {chunk_shape:?}");
+        return Err(hdf5::Error::Internal(msg));
     }
 
-    let ds_shape = array.shape().iter().map(|s| Extent::fixed(*s)).collect::<Vec<_>>();
+    let ds_shape = array.shape()
+                        .iter()
+                        .map(|s| hdf5::Extent::fixed(*s))
+                        .collect::<Vec<_>>();
     let dataset = file.new_dataset::<T>()
                       .chunk(chunk_shape.as_slice())
                       .shape(   ds_shape.as_slice())
@@ -289,7 +294,7 @@ mod tests {
         let invalid = array![ [1, 2], [3, 4] ];
         let out     = writer.write(invalid);
 
-        assert!(matches!(out, Err(Error::Internal(_))));
+        assert!(matches!(out, Err(hdf5::Error::Internal(_))));
 
         let valid = array![ [10, 20, 30], [40, 50, 60] ];
         writer.write(valid.clone()).unwrap();
