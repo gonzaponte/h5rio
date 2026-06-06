@@ -247,7 +247,7 @@ mod tests {
 
     #[test]
     fn flush_on_drop() {
-        // Write less entries than chunk size and verify that it is still written
+        // Write less entries than chunk size and verify that they are still written
         let (_dir, filename) = tempfile("flush_on_drop");
         let file             = hdf5::File::create(filename.clone()).unwrap();
         let writer           = ArrayHdf5Writer::<i64>::new(Rc::new(file), "/here", 5, vec![2,3]).unwrap();
