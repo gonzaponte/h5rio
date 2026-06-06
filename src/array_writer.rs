@@ -27,6 +27,11 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
             return Err(hdf5::Error::Internal(msg));
         }
 
+        if shape.iter().any(|s| *s == 0) {
+            let msg = format!("ArrayHdf5Writer::new: invalid array shape {shape:?}");
+            return Err(hdf5::Error::Internal(msg));
+        }
+
         let chunk_total = chunk_size * shape.iter().product::<usize>();
 
         let mut chunk_shape = vec![chunk_size];
@@ -196,6 +201,17 @@ mod tests {
         let file             = hdf5::File::create(filename).unwrap();
         let writer           = ArrayHdf5Writer::<u16>::new(Rc::new(file), "/here", 0, vec![1,2,3]);
         assert!(writer.is_err());
+    }
+
+    #[rstest]
+    #[case(vec![0, 1, 1])]
+    #[case(vec![1, 0, 1])]
+    #[case(vec![1, 1, 0])]
+    fn new_invalid_shape(#[case] shape: Vec<usize>) {
+        let (_dir, filename) = tempfile("new_invalid_shape");
+        let file             = hdf5::File::create(filename).unwrap();
+        let writer           = ArrayHdf5Writer::<u16>::new(Rc::new(file), "/here", 123, shape);
+        assert!(matches!(writer, Err(hdf5::Error::Internal(_))));
     }
 
     #[test]
