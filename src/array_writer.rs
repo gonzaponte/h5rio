@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::io::{Error as IoError, ErrorKind, Result};
 use std::rc::Rc;
 
 use hdf5_metno::{self as hdf5, Error, Extent};
@@ -48,7 +47,7 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         Ok(ArrayHdf5Writer{_file: file, dataset, chunk_size, cache, shape})
     }
 
-    fn dump_cache(&self) -> Result<()> {
+    fn dump_cache(&self) -> hdf5::Result<()> {
         let n_write = self.cache
                           .borrow()
                           .len()
@@ -90,10 +89,9 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         Ok(())
     }
 
-    pub fn write<D: Dimension>(&self, item: Array<T,D>) -> Result<()> {
+    pub fn write<D: Dimension>(&self, item: Array<T,D>) -> hdf5::Result<()> {
         if item.shape() != self.shape.as_slice() {
-            return Err(IoError::new(
-                ErrorKind::InvalidInput,
+            return Err(Error::Internal(
                 format!(
                     "ArrayHdf5Writer::write: invalid array shape {:?}, expected {:?}",
                     item.shape(),
@@ -112,7 +110,7 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         }
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> hdf5::Result<()> {
         self.dump_cache()
     }
 

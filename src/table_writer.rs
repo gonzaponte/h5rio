@@ -1,4 +1,3 @@
-use std::io::Result;
 use std::rc::Rc;
 
 use hdf5_metno as hdf5;
@@ -14,11 +13,11 @@ impl<T: hdf5::H5Type> TableHdf5Writer<T> {
         ArrayHdf5Writer::new(file, dataset, chunk_size, vec![]).map(Self)
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> hdf5::Result<()> {
         self.0.flush()
     }
 
-    pub fn write(&self, value: T) -> Result<()> {
+    pub fn write(&self, value: T) -> hdf5::Result<()> {
         self.0.write(arr0(value))
     }
 }

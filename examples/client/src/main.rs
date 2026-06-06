@@ -1,4 +1,3 @@
-use std::io::Result;
 use std::rc::Rc;
 
 use ndarray::{arr2, s};
@@ -13,7 +12,7 @@ struct Hit {
 }
 
 
-fn main() -> Result<()> {
+fn main() -> hdf5::Result<()> {
     let filename = "/tmp/example.h5";
     let file = Rc::new(hdf5::File::create(filename)?);
 

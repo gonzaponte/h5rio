@@ -1,4 +1,3 @@
-use std::io::Result;
 use std::rc::Rc;
 
 use h5rio::{h5type, TableHdf5Writer, read_table};
@@ -13,7 +12,7 @@ struct Hit {
 }
 
 
-fn main() -> Result<()> {
+fn main() -> hdf5::Result<()> {
     let filename = "/tmp/example_table.h5";
     let file = Rc::new(hdf5::File::create(filename)?);
 

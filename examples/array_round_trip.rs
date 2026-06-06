@@ -1,4 +1,3 @@
-use std::io::Result;
 use std::rc::Rc;
 
 use ndarray::{arr2,s};
@@ -6,7 +5,7 @@ use h5rio::{ArrayHdf5Writer, read_array};
 use hdf5_metno as hdf5;
 
 
-fn main() -> Result<()> {
+fn main() -> hdf5::Result<()> {
     let filename = "/tmp/example_array.h5";
     let file = Rc::new(hdf5::File::create(filename)?);
 
