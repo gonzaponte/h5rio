@@ -59,7 +59,7 @@ To use the current release:
 
 ```toml
 [dependencies]
-h5rio = "0.1.0"
+h5rio = "0.2.0"
 
 # Needed to create/open HDF5 files and by the #[h5type] macro expansion.
 hdf5_metno = { package = "hdf5-metno", version = "0.12.3", features = ["blosc-zlib"] }
