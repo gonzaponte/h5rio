@@ -289,7 +289,7 @@ mod tests {
         let invalid = array![ [1, 2], [3, 4] ];
         let out     = writer.write(invalid);
 
-        assert!(out.is_err());
+        assert!(matches!(out, Err(Error::Internal(_))));
 
         let valid = array![ [10, 20, 30], [40, 50, 60] ];
         writer.write(valid.clone()).unwrap();
