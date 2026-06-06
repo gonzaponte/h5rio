@@ -326,7 +326,8 @@ mod tests {
         let (_dir, filename) = tempfile("flush_on_drop");
         let file             = hdf5::File::create(filename.clone()).unwrap();
         let out              = write_chunked_array(Rc::new(file), "/here", chunk_shape, &array);
-        assert!(out.is_err())
+        assert!(matches!(out, Err(hdf5::Error::Internal(_))));
+        assert!(out.unwrap_err().to_string().contains("invalid chunk shape"));
     }
 
     #[test]
