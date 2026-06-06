@@ -86,7 +86,10 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
 
         let cache = self.cache.borrow();
         let view = ArrayViewD::from_shape(shape, &cache[..])
-            .expect("Cannot create array view with given shape");
+            .map_err(|error| {
+                let msg = format!("ArrayHdf5Writer: cannot create array view from cache: {error}");
+                hdf5::Error::Internal(msg)
+            })?;
         self.dataset.write_slice(view, data)?;
 
         drop(cache); // explicit drop to avoid holding immutable borrow
