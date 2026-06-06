@@ -6,7 +6,7 @@ pub fn h5type(_args: TokenStream, item: TokenStream) -> TokenStream {
     let item = proc_macro2::TokenStream::from(item);
 
     quote! {
-        #[derive(hdf5::H5Type, Clone, PartialEq, Debug)]
+        #[derive(::hdf5_metno::H5Type, Clone, PartialEq, Debug)]
         #[repr(C)]
         #item
     }
