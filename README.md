@@ -3,13 +3,15 @@
 [![Test suite](https://github.com/gonzaponte/h5rio/actions/workflows/test.yml/badge.svg)](https://github.com/gonzaponte/h5rio/actions/workflows/test.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
-A small Rust library for writing and reading appendable HDF5 datasets.
+A small Rust library for writing and reading HDF5 datasets.
 
 `h5rio` provides a compact interface for two common data-acquisition and
 simulation output patterns:
 
 - **Tables**: append typed records to a one-dimensional HDF5 dataset.
 - **Arrays**: append fixed-shape `ndarray` values along a resizable first axis.
+- **Fixed-size arrays**: write one fixed-size `ndarray` dataset with chunking and
+  compression, without an extensible axis.
 
 Datasets are buffered in memory and written in chunks, using Blosc/Zlib
 compression through [`hdf5-metno`](https://github.com/matthias314/hdf5-metno).
@@ -20,6 +22,7 @@ HDF5-compatible table records.
 
 - Append-only HDF5 table writer for compound Rust types.
 - Append-only HDF5 array writer for fixed-shape `ndarray` entries.
+- One-shot chunked array writer for fixed-size `ndarray` datasets.
 - Configurable buffering through the number of entries stored per chunk.
 - Shape validation for array writers, appended arrays, and chunked writes.
 - Read helpers for complete table and array datasets.
@@ -51,7 +54,9 @@ Every configured `item_shape` dimension must be nonzero. Every appended array
 must have exactly that configured shape; mismatched array shapes are rejected
 before the writer buffers the value.
 
-Both writers use a resizable leading axis and Blosc/Zlib compression.
+Both appendable writers use a resizable leading axis and Blosc/Zlib
+compression. `write_chunked_array` writes a fixed-size dataset with no
+extensible axes, using the chunk shape provided by the caller.
 
 ## Installation
 
@@ -198,6 +203,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Writing fixed-size chunked arrays
+
+Use `write_chunked_array` when you already have the complete array and do not
+need an appendable leading axis. The dataset shape is exactly the shape of the
+array being written; `chunk_shape` controls HDF5 chunking and must have the same
+rank as the array with no zero dimensions.
+
+```rust
+use std::rc::Rc;
+
+use h5rio::{read_array, write_chunked_array};
+use hdf5_metno as hdf5;
+use ndarray::array;
+
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let filename = "image.h5";
+    let file = Rc::new(hdf5::File::create(filename)?);
+    let image = array![
+        [0.0, 0.5, 1.0],
+        [1.0, 0.5, 0.0],
+    ];
+
+    write_chunked_array(file, "/image", vec![1, 3], &image)?;
+
+    let read = read_array::<f32>(filename, "/image")?;
+    assert_eq!(read.shape(), &[2, 3]);
+
+    Ok(())
+}
+```
+
 ## API overview
 
 ### Writers
@@ -206,6 +243,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | --- | --- | --- |
 | `TableHdf5Writer<T>` | Append scalar records of an HDF5-compatible type | `new`, `write`, `flush` |
 | `ArrayHdf5Writer<T>` | Append fixed-shape `ndarray::Array` entries | `new`, `write`, `flush` |
+| `write_chunked_array` | Write one fixed-size chunked `ndarray::Array` dataset | function |
 
 The `chunk_size` constructor argument is the number of appended **entries**
 buffered before a write to disk. For table datasets, one entry is one record.
