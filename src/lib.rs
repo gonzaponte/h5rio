@@ -8,8 +8,9 @@
 //! - write one fixed-size chunked `ndarray` dataset with
 //!   [`write_chunked_array`]
 //!
-//! It also provides complete read helpers, entry-by-entry array iteration, and
-//! the [`h5type`] attribute macro for HDF5-compatible table records.
+//! It also provides complete read helpers, entry-by-entry table and array
+//! iteration, and the [`h5type`] attribute macro for HDF5-compatible table
+//! records.
 //!
 //! # Example
 //!
