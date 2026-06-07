@@ -27,6 +27,7 @@ pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Resu
            })
 }
 
+#[derive(Debug)]
 pub struct Hdf5ArrayIter<T> {
     _file: hdf5::File, // keep file alive
     dataset: hdf5::Dataset,
@@ -178,5 +179,6 @@ mod tests {
         let out = iter_array::<i32>(&filename, "/scalar");
 
         assert!(matches!(out, Err(hdf5::Error::Internal(_))));
+        assert!(out.unwrap_err().to_string().contains("cannot iterate over a scalar dataset"));
     }
 }
