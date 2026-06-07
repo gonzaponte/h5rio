@@ -95,6 +95,12 @@ The library requires an HDF5 installation available to `hdf5-metno`. The
 repository includes a Nix development shell that provides HDF5 and the pinned
 Rust toolchain.
 
+## Documentation
+
+API documentation is available on
+[`docs.rs`](https://docs.rs/h5rio/latest/h5rio/). The examples in this README
+cover the main table and array workflows.
+
 ## Quick start: writing a table
 
 ```rust

@@ -5,6 +5,7 @@ edition = "2024"
 description = "A simple HDF5 IO library"
 license = "GPL-3.0"
 repository= "https://github.com/gonzaponte/h5rio"
+documentation = "https://docs.rs/h5rio"
 readme = "README.md"
 keywords = ["hdf5", "simple", "io"]
 
