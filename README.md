@@ -59,6 +59,23 @@ Both appendable writers use a resizable leading axis and Blosc/Zlib
 compression. `write_chunked_array` writes a fixed-size dataset with no
 extensible axes, using the chunk shape provided by the caller.
 
+## Design choices
+
+`h5rio` is intentionally opinionated. It focuses on a small set of
+data-acquisition and simulation output patterns that are common and easy to
+reason about:
+
+- datasets grow only through an appendable leading axis;
+- appended arrays have one fixed per-entry shape;
+- read helpers are simple, with full-dataset readers and row/entry iterators;
+- compression is fixed to Blosc/Zlib through `hdf5-metno`;
+- row types are ordinary Rust structs that implement `hdf5::H5Type`.
+
+These choices keep the API compact and predictable, but they will not fit every
+HDF5 use case. Applications that need arbitrary hyperslab updates, multiple
+extensible axes, custom compression policies, or schema discovery may need to
+use `hdf5-metno` directly.
+
 ## Installation
 
 To use the current release:

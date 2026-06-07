@@ -6,17 +6,37 @@ use ndarray::arr0;
 
 use crate::ArrayHdf5Writer;
 
+/// Append-only writer for one-dimensional HDF5 table datasets.
+///
+/// Each call to [`write`](Self::write) appends one row of type `T`. The row
+/// type must implement `hdf5::H5Type`; for plain record structs, use the
+/// [`h5type`](crate::h5type) attribute macro.
+///
+/// The dataset shape is `(n_rows,)`, where the leading dimension grows as rows
+/// are appended.
 pub struct TableHdf5Writer<T: hdf5::H5Type>(ArrayHdf5Writer<T>);
 
 impl<T: hdf5::H5Type> TableHdf5Writer<T> {
+    /// Create a new appendable table dataset.
+    ///
+    /// `chunk_size` is the number of rows buffered before writing to disk.
+    /// The value must be greater than zero.
     pub fn new(file: Rc<hdf5::File>, dataset: &str, chunk_size: usize) -> hdf5::Result<Self> {
         ArrayHdf5Writer::new(file, dataset, chunk_size, vec![]).map(Self)
     }
 
+    /// Write any buffered rows to disk.
+    ///
+    /// Writers also attempt to flush when dropped, but explicit flushing is
+    /// preferred because it reports failures directly.
     pub fn flush(&self) -> hdf5::Result<()> {
         self.0.flush()
     }
 
+    /// Append one row to the table.
+    ///
+    /// The row may be buffered in memory until `chunk_size` rows are available
+    /// or [`flush`](Self::flush) is called.
     pub fn write(&self, value: T) -> hdf5::Result<()> {
         self.0.write(arr0(value))
     }

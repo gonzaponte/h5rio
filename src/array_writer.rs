@@ -6,7 +6,14 @@ use hdf5_metno::filters::BloscShuffle;
 
 use ndarray::{Array, ArrayViewD, Dimension, IxDyn};
 
-
+/// Append-only writer for fixed-shape `ndarray` entries.
+///
+/// Each call to [`write`](Self::write) appends one array entry with the shape
+/// configured in [`new`](Self::new). The resulting dataset has shape
+/// `(n_entries, *item_shape)`.
+///
+/// For example, a writer created with `shape = vec![2, 3]` stores successive
+/// `2 x 3` arrays in a dataset with shape `(n_entries, 2, 3)`.
 pub struct ArrayHdf5Writer<T: hdf5::H5Type> {
     #[allow(dead_code)]
     _file     : Rc<hdf5::File>, // file needs to live while dataset lives, this is a way of ensuring that
@@ -17,6 +24,11 @@ pub struct ArrayHdf5Writer<T: hdf5::H5Type> {
 }
 
 impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
+    /// Create a new appendable array dataset.
+    ///
+    /// `chunk_size` is the number of array entries buffered before writing to
+    /// disk. `shape` is the fixed shape of each appended entry and must not
+    /// contain zero dimensions.
     pub fn new( file       : Rc<hdf5::File>
               , dataset    : &str
               , chunk_size : usize
@@ -98,6 +110,11 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         Ok(())
     }
 
+    /// Append one array entry.
+    ///
+    /// The array shape must exactly match the shape configured in
+    /// [`new`](Self::new). Mismatched shapes are rejected before the value is
+    /// buffered.
     pub fn write<D: Dimension>(&self, item: Array<T,D>) -> hdf5::Result<()> {
         if item.shape() != self.shape.as_slice() {
             return Err(hdf5::Error::Internal(
@@ -119,6 +136,10 @@ impl<T: hdf5::H5Type> ArrayHdf5Writer<T> {
         }
     }
 
+    /// Write any buffered array entries to disk.
+    ///
+    /// Writers also attempt to flush when dropped, but explicit flushing is
+    /// preferred because it reports failures directly.
     pub fn flush(&self) -> hdf5::Result<()> {
         self.dump_cache()
     }
@@ -143,7 +164,13 @@ impl<T: hdf5::H5Type> Drop for ArrayHdf5Writer<T> {
     }
 }
 
-
+/// Write one fixed-size chunked array dataset.
+///
+/// This function is for complete arrays that do not need an appendable leading
+/// axis. The dataset shape is exactly `array.shape()`.
+///
+/// `chunk_shape` controls HDF5 chunking. It must have the same rank as `array`
+/// and all chunk dimensions must be nonzero.
 pub fn write_chunked_array<T, D>( file        : Rc<hdf5::File>
                                 , dataset     : &str
                                 , chunk_shape : Vec<usize>

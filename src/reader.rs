@@ -4,13 +4,19 @@ use hdf5_metno as hdf5;
 
 use ndarray::{s, ArrayD, IxDyn};
 
-
+/// Read a complete one-dimensional table dataset into memory.
+///
+/// Use [`iter_table`] instead when the table is too large to load at once.
 pub fn read_table<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<Vec<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
     dataset.read_slice_1d::<T,_>(s![..]).map(|v| v.into_raw_vec_and_offset().0)
 }
 
+/// Iterator over rows in a one-dimensional HDF5 table dataset.
+///
+/// Created by [`iter_table`]. The iterator keeps the file open for as long as
+/// iteration continues.
 #[derive(Debug)]
 pub struct Hdf5TableIter<T> {
     _file: hdf5::File, // keep file alive
@@ -20,6 +26,10 @@ pub struct Hdf5TableIter<T> {
     _inner_type: PhantomData<T>,
 }
 
+/// Iterate over a one-dimensional table dataset row by row.
+///
+/// The dataset must have shape `(n_rows,)`. Multidimensional datasets and
+/// scalar datasets are rejected.
 pub fn iter_table<T: hdf5::H5Type>(filename: &str, dataset: &str) -> hdf5::Result<Hdf5TableIter<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
@@ -52,6 +62,9 @@ impl<T> Iterator for Hdf5TableIter<T> where T: hdf5::H5Type {
     }
 }
 
+/// Read a complete array dataset into memory.
+///
+/// Use [`iter_array`] instead to read one leading-axis entry at a time.
 pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<ArrayD<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
@@ -68,6 +81,10 @@ pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Resu
            })
 }
 
+/// Iterator over leading-axis entries in an HDF5 array dataset.
+///
+/// Created by [`iter_array`]. The iterator keeps the file open for as long as
+/// iteration continues.
 #[derive(Debug)]
 pub struct Hdf5ArrayIter<T> {
     _file: hdf5::File, // keep file alive
@@ -78,6 +95,10 @@ pub struct Hdf5ArrayIter<T> {
     _inner_type: PhantomData<T>,
 }
 
+/// Iterate over an array dataset along its leading axis.
+///
+/// For a dataset with shape `(n_entries, 2, 3)`, each yielded item has shape
+/// `(2, 3)`. Scalar datasets are rejected.
 pub fn iter_array<T: hdf5::H5Type>(filename: &str, dataset: &str) -> hdf5::Result<Hdf5ArrayIter<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
