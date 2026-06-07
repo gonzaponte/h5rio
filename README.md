@@ -302,6 +302,8 @@ cargo test
 The repository pins Rust `1.95.0` in `rust-toolchain.toml`. The project's
 `justfile` uses `cargo nextest` for its test recipes.
 
+For contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Testing and continuous integration
 
 Tests cover:
