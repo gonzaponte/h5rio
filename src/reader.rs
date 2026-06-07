@@ -11,6 +11,47 @@ pub fn read_table<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Resu
     dataset.read_slice_1d::<T,_>(s![..]).map(|v| v.into_raw_vec_and_offset().0)
 }
 
+#[derive(Debug)]
+pub struct Hdf5TableIter<T> {
+    _file: hdf5::File, // keep file alive
+    dataset: hdf5::Dataset,
+    index: usize,
+    len: usize,
+    _inner_type: PhantomData<T>,
+}
+
+pub fn iter_table<T: hdf5::H5Type>(filename: &str, dataset: &str) -> hdf5::Result<Hdf5TableIter<T>> {
+    let file    = hdf5::File::open(filename)?;
+    let dataset = file.dataset(dataset)?;
+    let shape   = dataset.shape();
+
+    if shape.len() != 1 {
+        let msg = format!("iter_table: expected a one-dimensional table dataset, got shape {shape:?}");
+        return Err(hdf5::Error::Internal(msg));
+    }
+
+    Ok(Hdf5TableIter{_file: file, dataset, index:0, len: shape[0], _inner_type: PhantomData})
+}
+
+impl<T> Iterator for Hdf5TableIter<T> where T: hdf5::H5Type {
+    type Item = hdf5::Result<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.len { return None; }
+
+        let entry = self.dataset
+                        .read_slice_1d::<T,_>(s![self.index..self.index + 1])
+                        .and_then(|data| data.into_iter()
+                                             .next()
+                                             .ok_or_else(|| {
+                                                 let msg = "iter_table: one-row slice returned no rows".to_owned();
+                                                 hdf5::Error::Internal(msg)
+                                             }));
+        self.index += 1;
+        Some(entry)
+    }
+}
+
 pub fn read_array<T: hdf5::H5Type>(filename: &str, dataset : &str) -> hdf5::Result<ArrayD<T>> {
     let file    = hdf5::File::open(filename)?;
     let dataset = file.dataset(dataset)?;
@@ -120,6 +161,39 @@ mod tests {
         assert_float_eq!(read[0].x, 1.62, ulps<=2);
         assert_float_eq!(read[1].x, 2.72, ulps<=2);
         assert_float_eq!(read[2].x, 3.14, ulps<=2);
+    }
+
+    #[test]
+    fn iter_table_custom() {
+        let mut iter = iter_table::<DummyData>("data/table_and_array.h5", "/group/table").unwrap();
+
+        let first  = iter.next().unwrap().unwrap();
+        let second = iter.next().unwrap().unwrap();
+        let third  = iter.next().unwrap().unwrap();
+        assert!(iter.next().is_none());
+
+        assert_eq!( first.i,  5);
+        assert_eq!(second.i,  1);
+        assert_eq!( third.i, 42);
+
+        assert_float_eq!( first.x, 1.62, ulps<=2);
+        assert_float_eq!(second.x, 2.72, ulps<=2);
+        assert_float_eq!( third.x, 3.14, ulps<=2);
+    }
+
+    #[test]
+    fn iter_table_rejects_multidimensional_dataset() {
+        let (_dir, filename) = crate::utils::tempfile("iter_table_rejects_multidimensional_dataset");
+        let file             = hdf5::File::create(&filename).unwrap();
+        file.new_dataset::<i32>()
+            .shape([2, 2])
+            .create("/array")
+            .unwrap();
+
+        let out = iter_table::<i32>(&filename, "/array");
+
+        assert!(matches!(out, Err(hdf5::Error::Internal(_))));
+        assert!(out.unwrap_err().to_string().contains("expected a one-dimensional table dataset"));
     }
 
     #[test]
