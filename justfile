@@ -24,3 +24,6 @@ test-client:
     cp -r examples/client /tmp/
     cd /tmp/client
     cargo run
+
+doc:
+    cargo doc --no-deps --open
