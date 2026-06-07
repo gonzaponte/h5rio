@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-10
+
+### Added
+
+* Added `iter_table` for reading table datasets row by row.
+* Added Diataxis-oriented crate-level Rustdoc and public API reference docs.
+* Added contribution guidelines.
+* Added a `just doc` recipe for building local Rustdoc.
+* Added crates.io documentation metadata pointing to docs.rs.
+
+### Changed
+
+* Expanded README documentation for fixed-size chunked array writing.
+* Added README and Rustdoc explanation of the crate's design choices and
+  intended scope.
+
 ## [0.2.0] - 2026-06-06
 
 ### Added
@@ -51,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added Nix development environment.
 * Added GitHub Actions workflow for building and testing the project.
 
-[Unreleased]: https://github.com/gonzaponte/h5rio/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/gonzaponte/h5rio/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/gonzaponte/h5rio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/gonzaponte/h5rio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/gonzaponte/h5rio/releases/tag/v0.1.0
