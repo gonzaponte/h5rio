@@ -31,3 +31,9 @@ jobs:
 
       - name: Run examples
         run: nix develop --command just examples
+
+      - name: Run macros tests
+        run: nix develop --command just test-macros
+
+      - name: Run doc tests
+        run: nix develop --command just test-doc
