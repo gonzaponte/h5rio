@@ -9,6 +9,9 @@ test:
 test-macros:
     cargo nextest run -p h5rio_macros
 
+test-doc:
+    cargo test --doc
+
 verbose regexp:
     cargo nextest run --no-capture -E "test({{regexp}})"
 
